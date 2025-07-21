@@ -3,6 +3,8 @@ package com.mediasoft.service;
 import com.mediasoft.dto.ReviewRequestDTO;
 import com.mediasoft.dto.ReviewResponseDTO;
 import com.mediasoft.dto.ReviewUpdateRequestDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -12,4 +14,6 @@ public interface ReviewService {
     ReviewResponseDTO getById(Long visitorId, Long restaurantId);
     ReviewResponseDTO update(Long visitorId, Long restaurantId, ReviewUpdateRequestDTO reviewRequestDTO);
     void delete(Long visitorId, Long restaurantId);
+    Page<ReviewResponseDTO> getReviewsSortedByRatingAsc(Pageable pageable);
+    Page<ReviewResponseDTO> getReviewsSortedByRatingDesc(Pageable pageable);
 }

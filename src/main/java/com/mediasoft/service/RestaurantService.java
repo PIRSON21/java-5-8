@@ -11,4 +11,6 @@ public interface RestaurantService {
     RestaurantResponseDTO getById(Long id);
     void delete(Long id);
     RestaurantResponseDTO update(Long id, RestaurantRequestDTO restaurantRequestDTO);
+    List<RestaurantResponseDTO> getRestaurantsWithMinRating(double rating);
+    List<RestaurantResponseDTO> getRestaurantsWithMinRatingJPQL(double rating);
 }

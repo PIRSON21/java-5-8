@@ -4,7 +4,7 @@ import com.mediasoft.dto.VisitorRequestDTO;
 import com.mediasoft.dto.VisitorResponseDTO;
 import com.mediasoft.entity.Visitor;
 import com.mediasoft.mapper.VisitorMapper;
-import com.mediasoft.repository.impl.VisitorRepository;
+import com.mediasoft.repository.VisitorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +31,7 @@ public class VisitorService implements com.mediasoft.service.VisitorService {
 
     @Override
     public VisitorResponseDTO getById(Long id) {
-        Visitor visitor = visitorRepository.findById(id);
+        Visitor visitor = visitorRepository.findById(id).orElse(null);
         if (visitor == null) {
             return null;
         }
@@ -40,12 +40,12 @@ public class VisitorService implements com.mediasoft.service.VisitorService {
 
     @Override
     public void delete(Long id) {
-        visitorRepository.remove(id);
+        visitorRepository.deleteById(id);
     }
 
     @Override
     public VisitorResponseDTO update(Long id, VisitorRequestDTO visitorRequestDTO) {
-        Visitor existingVisitor = visitorRepository.findById(id);
+        Visitor existingVisitor = visitorRepository.findById(id).orElse(null);
         if (existingVisitor == null) {
             return null;
         }

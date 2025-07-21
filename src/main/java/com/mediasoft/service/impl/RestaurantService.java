@@ -4,7 +4,7 @@ import com.mediasoft.dto.RestaurantRequestDTO;
 import com.mediasoft.dto.RestaurantResponseDTO;
 import com.mediasoft.entity.Restaurant;
 import com.mediasoft.mapper.RestaurantMapper;
-import com.mediasoft.repository.impl.RestaurantRepository;
+import com.mediasoft.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,22 +17,6 @@ public class RestaurantService implements com.mediasoft.service.RestaurantServic
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMapper restaurantMapper;
 
-
-    public void save(Restaurant restaurant) {
-        restaurantRepository.save(restaurant);
-    }
-
-    public Restaurant findById(Long id) {
-        return restaurantRepository.findById(id);
-    }
-
-    public void remove(Long id) {
-        restaurantRepository.remove(id);
-    }
-
-    public List<Restaurant> findAll() {
-        return restaurantRepository.findAll();
-    }
 
     @Override
     public RestaurantResponseDTO create(RestaurantRequestDTO restaurantRequestDTO) {
@@ -50,22 +34,36 @@ public class RestaurantService implements com.mediasoft.service.RestaurantServic
 
     @Override
     public RestaurantResponseDTO getById(Long id) {
-        return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.findById(id));
+        return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.findById(id).orElse(null));
     }
 
     @Override
     public void delete(Long id) {
-        restaurantRepository.remove(id);
+        if (restaurantRepository.existsById(id)) {
+            restaurantRepository.deleteById(id);
+        }
     }
 
     @Override
     public RestaurantResponseDTO update(Long id, RestaurantRequestDTO restaurantRequestDTO) {
-        Restaurant existingRestaurant = restaurantRepository.findById(id);
+        Restaurant existingRestaurant = restaurantRepository.findById(id).orElse(null);
         if (existingRestaurant == null) {
             return null;
         }
         Restaurant updatedRestaurant = restaurantMapper.toRestaurant(restaurantRequestDTO);
         updatedRestaurant.setId(existingRestaurant.getId());
         return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.save(updatedRestaurant));
+    }
+
+    public List<RestaurantResponseDTO> getRestaurantsWithMinRating(double rating) {
+        return restaurantRepository.findByRatingGreaterThanEqual(rating).stream()
+                .map(restaurantMapper::toRestaurantResponseDTO)
+                .toList();
+    }
+
+    public List<RestaurantResponseDTO> getRestaurantsWithMinRatingJPQL(double rating) {
+        return restaurantRepository.findRestaurantsWithMinRating(rating).stream()
+                .map(restaurantMapper::toRestaurantResponseDTO)
+                .toList();
     }
 }

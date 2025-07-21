@@ -6,6 +6,8 @@ import com.mediasoft.dto.ReviewUpdateRequestDTO;
 import com.mediasoft.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,5 +42,15 @@ public class ReviewController {
     @DeleteMapping("/{restaurantId}/{visitorId}")
     public void delete(@PathVariable Long visitorId, @PathVariable Long restaurantId) {
         reviewService.delete(visitorId, restaurantId);
+    }
+
+   @GetMapping("/sorted/asc")
+    public Page<ReviewResponseDTO> getReviewsSortedByRatingAsc(Pageable pageable) {
+        return reviewService.getReviewsSortedByRatingAsc(pageable);
+    }
+
+    @GetMapping("/sorted/desc")
+    public Page<ReviewResponseDTO> getReviewsSortedByRatingDesc(Pageable pageable) {
+        return reviewService.getReviewsSortedByRatingDesc(pageable);
     }
 }

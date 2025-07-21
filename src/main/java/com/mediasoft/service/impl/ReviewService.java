@@ -5,16 +5,20 @@ import com.mediasoft.dto.ReviewResponseDTO;
 import com.mediasoft.dto.ReviewUpdateRequestDTO;
 import com.mediasoft.entity.Restaurant;
 import com.mediasoft.entity.Review;
+import com.mediasoft.entity.Visitor;
 import com.mediasoft.mapper.ReviewMapper;
-import com.mediasoft.repository.impl.RestaurantRepository;
-import com.mediasoft.repository.impl.ReviewRepository;
-import com.mediasoft.repository.impl.VisitorRepository;
+import com.mediasoft.repository.RestaurantRepository;
+import com.mediasoft.repository.ReviewRepository;
+import com.mediasoft.repository.VisitorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,29 +30,31 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     @Override
     public ReviewResponseDTO create(ReviewRequestDTO reviewRequestDTO) {
+        System.out.println("Creating review: " + reviewRequestDTO);
         Review review = mapper.toReview(reviewRequestDTO);
-        if (save(review)) {
-            return mapper.toReviewResponseDTO(review);
-        }
-        return null;
-    }
+        System.out.println("Mapped review: " + review.getRestaurant() + review.getVisitor());
 
+        Restaurant restaurant = review.getRestaurant();
+        if (restaurant == null || restaurant.getId() == null) {
+            return null;
+        }
+        Visitor visitor = review.getVisitor();
+        if (visitor == null || visitor.getId() == null) {
+            return null;
+        }
 
-    public boolean save(Review review) {
-        if (restaurantRepository.findById(review.getRestaurantId()) == null) {
-            return false;
+        if (!restaurantRepository.existsById(restaurant.getId()) ||
+        !visitorRepository.existsById(visitor.getId())) {
+            return null;
         }
-        if (visitorRepository.findById(review.getVisitorId()) == null) {
-            return false;
-        }
-        reviewRepository.save(review);
-        updateRestaurantRating(review.getRestaurantId());
-        return true;
+        Review savedReview = reviewRepository.save(review);
+        updateRestaurantRating(savedReview.getRestaurant().getId());
+        return mapper.toReviewResponseDTO(savedReview);
     }
 
     @Override
     public ReviewResponseDTO getById(Long visitorId, Long restaurantId) {
-        Review review = reviewRepository.findByVisitorAndRestaurant(visitorId, restaurantId);
+        Review review = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElse(null);
         if (review == null) {
             return null;
         }
@@ -66,52 +72,49 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     @Override
     public ReviewResponseDTO update(Long visitorId, Long restaurantId, ReviewUpdateRequestDTO reviewRequestDTO) {
-        Review existingReview = reviewRepository.findByVisitorAndRestaurant(visitorId, restaurantId);
+        Review existingReview = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElse(null);
         if (existingReview == null) {
             return null;
         }
 
         existingReview.setRating(reviewRequestDTO.getRating());
         existingReview.setComment(reviewRequestDTO.getComment());
-        if (save(existingReview)) {
-            return mapper.toReviewResponseDTO(existingReview);
-        }
-        return null;
+        Review updated = reviewRepository.save(existingReview);
+        updateRestaurantRating(updated.getRestaurant().getId());
+        return mapper.toReviewResponseDTO(updated);
     }
 
     @Override
     public void delete(Long visitorId, Long restaurantId) {
-        Review review = reviewRepository.findByVisitorAndRestaurant(visitorId, restaurantId);
-        if (review != null) {
-            reviewRepository.remove(review.getVisitorId(), review.getRestaurantId());
-            updateRestaurantRating(review.getRestaurantId());
+        Optional<Review> reviewOpt = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId);
+        if (reviewOpt.isPresent()) {
+            Review review = reviewOpt.get();
+            reviewRepository.delete(review);
+            updateRestaurantRating(review.getRestaurant().getId());
         }
     }
-
-
 
     private void updateRestaurantRating(Long restaurantId) {
-        BigDecimal totalRating = BigDecimal.ZERO;
-        List<Review> reviews = reviewRepository.findByRestaurant(restaurantId);
-        if (!reviews.isEmpty()) {
-            double averageRating = reviews.stream()
-                    .mapToDouble(review -> review.getRating())
-                    .average()
-                    .orElse(0.0);
-
-            totalRating = BigDecimal.valueOf(averageRating).
-                    setScale(1, RoundingMode.HALF_UP);
-        }
-
-        Restaurant restaurant = restaurantRepository.findById(restaurantId);
+        List<Review> reviews = reviewRepository.findByRestaurantId(restaurantId);
+        if (reviews.isEmpty()) return;
+        double averageRating = reviews.stream()
+                .mapToDouble(review -> review.getRating())
+                .average()
+                .orElse(0.0);
+        Restaurant restaurant = restaurantRepository.findById(restaurantId).orElse(null);
         if (restaurant != null) {
-            restaurant.setRating(totalRating);
+            restaurant.setRating(BigDecimal.valueOf(averageRating).setScale(1, RoundingMode.HALF_UP));
+            restaurantRepository.save(restaurant);
         }
-
     }
 
+    public Page<ReviewResponseDTO> getReviewsSortedByRatingAsc(Pageable pageable) {
+        return reviewRepository.findAllByOrderByRatingAsc(pageable)
+                .map(mapper::toReviewResponseDTO);
+    }
 
-    public List<Review> findAll() {
-        return reviewRepository.findAll();
+    public Page<ReviewResponseDTO> getReviewsSortedByRatingDesc(Pageable pageable) {
+        return reviewRepository.findAllByOrderByRatingDesc(pageable)
+                .map(mapper::toReviewResponseDTO);
     }
 }

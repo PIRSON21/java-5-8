@@ -1,9 +1,6 @@
 package com.mediasoft.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,22 +9,27 @@ import lombok.*;
 
 @Entity
 @Getter
+@Table(name = "reviews")
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class Review {
-    @Id
-    @NotNull(message = "ID отзыва не может быть пустым")
-    private Long visitorId;
-    @Id
-    @NotNull(message = "ID ресторана не может быть пустым")
-    private Long restaurantId;
+    @EmbeddedId
+    private ReviewID id;
 
-    @NotNull(message = "Рейтинг не может быть пустым")
-    @Min(value = 1, message = "Рейтинг должен быть от 1 до 5")
-    @Max(value = 5, message = "Рейтинг должен быть от 1 до 5")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("visitorId")
+    @JoinColumn(name = "visitor_id", nullable = false)
+    private Visitor visitor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("restaurantId")
+    @JoinColumn(name = "restaurant_id", nullable = false)
+    private Restaurant restaurant;
+
+    @Column(nullable = false)
     private int rating;
 
-    @NotBlank(message = "Комментарий не может быть пустым")
+    @Column(columnDefinition = "TEXT")
     private String comment;
 }
