@@ -1,37 +1,16 @@
 package com.mediasoft.repository;
 
 import com.mediasoft.entity.Restaurant;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public class RestaurantRepository {
-    private final List<Restaurant> restaurants = new ArrayList<>();
-
-    public void save(Restaurant restaurant) {
-        for (int i = 0; i < restaurants.size(); i++) {
-            if (restaurants.get(i).getId().equals(restaurant.getId())) {
-                restaurants.set(i, restaurant);
-                return;
-            }
-        }
-        restaurants.add(restaurant);
-    }
-
-    public List<Restaurant> findAll() {
-        return new ArrayList<>(restaurants);
-    }
-
-    public Restaurant findById(Long id) {
-        return restaurants.stream()
-                .filter(restaurant -> restaurant.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-    }
-
-    public void remove(Long id) {
-        restaurants.removeIf(restaurant -> restaurant.getId().equals(id));
-    }
+public interface RestaurantRepository {
+    Restaurant save(Restaurant restaurant);
+    List<Restaurant> findAll();
+    Restaurant findById(Long id);
+    void remove(Long id);
 }
