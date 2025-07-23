@@ -20,7 +20,6 @@ public class RestaurantController {
     public RestaurantResponseDTO create(@Valid @RequestBody RestaurantRequestDTO restaurantRequestDTO) {
         return restaurantService.create(restaurantRequestDTO);
     }
-    // TODO: перенести базу из H2 в psql
 
     @GetMapping
     public List<RestaurantResponseDTO> getAll() {

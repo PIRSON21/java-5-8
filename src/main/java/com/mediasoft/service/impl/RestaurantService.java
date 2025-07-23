@@ -3,6 +3,7 @@ package com.mediasoft.service.impl;
 import com.mediasoft.dto.RestaurantRequestDTO;
 import com.mediasoft.dto.RestaurantResponseDTO;
 import com.mediasoft.entity.Restaurant;
+import com.mediasoft.exception.ResourceNotFoundException;
 import com.mediasoft.mapper.RestaurantMapper;
 import com.mediasoft.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,9 @@ public class RestaurantService implements com.mediasoft.service.RestaurantServic
 
     @Override
     public RestaurantResponseDTO getById(Long id) {
-        return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.findById(id).orElse(null));
+        return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Ресторан с ID " + id + " не найден")
+        ));
     }
 
     @Override
@@ -46,10 +49,9 @@ public class RestaurantService implements com.mediasoft.service.RestaurantServic
 
     @Override
     public RestaurantResponseDTO update(Long id, RestaurantRequestDTO restaurantRequestDTO) {
-        Restaurant existingRestaurant = restaurantRepository.findById(id).orElse(null);
-        if (existingRestaurant == null) {
-            return null;
-        }
+        Restaurant existingRestaurant = restaurantRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Ресторан с ID " + id + " не найден")
+        );
         Restaurant updatedRestaurant = restaurantMapper.toRestaurant(restaurantRequestDTO);
         updatedRestaurant.setId(existingRestaurant.getId());
         return restaurantMapper.toRestaurantResponseDTO(restaurantRepository.save(updatedRestaurant));

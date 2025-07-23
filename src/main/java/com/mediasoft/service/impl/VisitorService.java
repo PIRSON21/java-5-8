@@ -3,6 +3,7 @@ package com.mediasoft.service.impl;
 import com.mediasoft.dto.VisitorRequestDTO;
 import com.mediasoft.dto.VisitorResponseDTO;
 import com.mediasoft.entity.Visitor;
+import com.mediasoft.exception.ResourceNotFoundException;
 import com.mediasoft.mapper.VisitorMapper;
 import com.mediasoft.repository.VisitorRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +32,9 @@ public class VisitorService implements com.mediasoft.service.VisitorService {
 
     @Override
     public VisitorResponseDTO getById(Long id) {
-        Visitor visitor = visitorRepository.findById(id).orElse(null);
-        if (visitor == null) {
-            return null;
-        }
+        Visitor visitor = visitorRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Посетитель с ID " + id + " не найден")
+        );
         return visitorMapper.toVisitorResponseDTO(visitor);
     }
 
@@ -45,10 +45,9 @@ public class VisitorService implements com.mediasoft.service.VisitorService {
 
     @Override
     public VisitorResponseDTO update(Long id, VisitorRequestDTO visitorRequestDTO) {
-        Visitor existingVisitor = visitorRepository.findById(id).orElse(null);
-        if (existingVisitor == null) {
-            return null;
-        }
+        Visitor existingVisitor = visitorRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Посетитель с ID " + id + " не найден")
+        );
         Visitor updatedVisitor = visitorMapper.toVisitor(visitorRequestDTO);
         updatedVisitor.setId(existingVisitor.getId());
         return visitorMapper.toVisitorResponseDTO(visitorRepository.save(updatedVisitor));

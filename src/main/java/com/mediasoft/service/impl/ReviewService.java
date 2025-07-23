@@ -6,6 +6,8 @@ import com.mediasoft.dto.ReviewUpdateRequestDTO;
 import com.mediasoft.entity.Restaurant;
 import com.mediasoft.entity.Review;
 import com.mediasoft.entity.Visitor;
+import com.mediasoft.exception.ResourceNotFoundException;
+import com.mediasoft.exception.ValidationException;
 import com.mediasoft.mapper.ReviewMapper;
 import com.mediasoft.repository.RestaurantRepository;
 import com.mediasoft.repository.ReviewRepository;
@@ -30,22 +32,20 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     @Override
     public ReviewResponseDTO create(ReviewRequestDTO reviewRequestDTO) {
-        System.out.println("Creating review: " + reviewRequestDTO);
         Review review = mapper.toReview(reviewRequestDTO);
-        System.out.println("Mapped review: " + review.getRestaurant() + review.getVisitor());
 
         Restaurant restaurant = review.getRestaurant();
         if (restaurant == null || restaurant.getId() == null) {
-            return null;
+            throw new ValidationException("Ресторан не указан");
         }
         Visitor visitor = review.getVisitor();
         if (visitor == null || visitor.getId() == null) {
-            return null;
+            throw new ValidationException("Посетитель не указан");
         }
 
         if (!restaurantRepository.existsById(restaurant.getId()) ||
         !visitorRepository.existsById(visitor.getId())) {
-            return null;
+            throw new ResourceNotFoundException("Ресторан или посетитель не найдены");
         }
         Review savedReview = reviewRepository.save(review);
         updateRestaurantRating(savedReview.getRestaurant().getId());
@@ -54,10 +54,9 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     @Override
     public ReviewResponseDTO getById(Long visitorId, Long restaurantId) {
-        Review review = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElse(null);
-        if (review == null) {
-            return null;
-        }
+        Review review = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElseThrow(
+                () -> new ResourceNotFoundException("Отзыв не найден для посетителя с ID " + visitorId + " и ресторана с ID " + restaurantId)
+        );
 
         return mapper.toReviewResponseDTO(review);
     }
@@ -72,10 +71,9 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     @Override
     public ReviewResponseDTO update(Long visitorId, Long restaurantId, ReviewUpdateRequestDTO reviewRequestDTO) {
-        Review existingReview = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElse(null);
-        if (existingReview == null) {
-            return null;
-        }
+        Review existingReview = reviewRepository.findByVisitorIdAndRestaurantId(visitorId, restaurantId).orElseThrow(
+                () -> new ResourceNotFoundException("Отзыв не найден для посетителя с ID " + visitorId + " и ресторана с ID " + restaurantId)
+        );
 
         existingReview.setRating(reviewRequestDTO.getRating());
         existingReview.setComment(reviewRequestDTO.getComment());
@@ -96,7 +94,6 @@ public class ReviewService implements com.mediasoft.service.ReviewService {
 
     private void updateRestaurantRating(Long restaurantId) {
         List<Review> reviews = reviewRepository.findByRestaurantId(restaurantId);
-        if (reviews.isEmpty()) return;
         double averageRating = reviews.stream()
                 .mapToDouble(review -> review.getRating())
                 .average()
